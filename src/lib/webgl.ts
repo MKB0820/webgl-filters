@@ -179,7 +179,16 @@ export class WebGLRenderer {
     gl.clearColor(0, 0, 0, 0)
     gl.clear(gl.COLOR_BUFFER_BIT)
 
+    // 激活纹理单元 0
+    gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, this.texture)
+
+    // 设置 u_image uniform 为纹理单元 0
+    const imageLocation = gl.getUniformLocation(this.program, 'u_image')
+    if (imageLocation) {
+      gl.uniform1i(imageLocation, 0)
+    }
+
     gl.drawArrays(gl.TRIANGLES, 0, 6)
   }
 
