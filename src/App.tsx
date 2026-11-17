@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { WebGLRenderer } from './lib/webgl'
 import { vertexShaderSource, filterShaders } from './lib/shaders'
 import FilterControls from './components/FilterControls'
@@ -34,20 +34,8 @@ export default function App() {
     }
   }, [])
 
-  // 加载图像
-  useEffect(() => {
-    if (!image || !rendererRef.current) return
-
-    rendererRef.current.loadImage(image)
-    applyFilter()
-  }, [image])
-
   // 应用滤镜
-  useEffect(() => {
-    applyFilter()
-  }, [currentFilter, filterParams])
-
-  const applyFilter = () => {
+  const applyFilter = useCallback(() => {
     if (!rendererRef.current || !image) return
 
     const filter = filterShaders[currentFilter]
@@ -71,7 +59,20 @@ export default function App() {
     } catch (error) {
       console.error('渲染失败:', error)
     }
-  }
+  }, [image, currentFilter, filterParams])
+
+  // 加载图像
+  useEffect(() => {
+    if (!image || !rendererRef.current) return
+
+    rendererRef.current.loadImage(image)
+    applyFilter()
+  }, [image, applyFilter])
+
+  // 应用滤镜变化
+  useEffect(() => {
+    applyFilter()
+  }, [applyFilter])
 
   const handleImageLoad = (img: HTMLImageElement) => {
     setImage(img)
