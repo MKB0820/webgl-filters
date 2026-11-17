@@ -17,23 +17,6 @@ export default function App() {
     u_blurAmount: 0,
   })
 
-  // 初始化 WebGL
-  useEffect(() => {
-    if (!canvasRef.current) return
-
-    try {
-      const renderer = new WebGLRenderer(canvasRef.current)
-      rendererRef.current = renderer
-    } catch (error) {
-      console.error('WebGL 初始化失败:', error)
-      alert('您的浏览器不支持 WebGL2')
-    }
-
-    return () => {
-      rendererRef.current?.dispose()
-    }
-  }, [])
-
   // 应用滤镜
   const applyFilter = useCallback(() => {
     if (!rendererRef.current || !image) return
@@ -61,13 +44,34 @@ export default function App() {
     }
   }, [image, currentFilter, filterParams])
 
-  // 加载图像
+  // 加载图像（canvas 只有在有图片时才挂载，因此在这里惰性创建渲染器）
   useEffect(() => {
-    if (!image || !rendererRef.current) return
+    const canvas = canvasRef.current
+    if (!canvas || !image) return
+
+    // canvas 元素被替换过（如「更换图片」后）则需要重建渲染器
+    if (!rendererRef.current || rendererRef.current.canvas !== canvas) {
+      rendererRef.current?.dispose()
+      try {
+        rendererRef.current = new WebGLRenderer(canvas)
+      } catch (error) {
+        console.error('WebGL 初始化失败:', error)
+        alert('您的浏览器不支持 WebGL2')
+        return
+      }
+    }
 
     rendererRef.current.loadImage(image)
     applyFilter()
   }, [image, applyFilter])
+
+  // 组件卸载时释放 GPU 资源
+  useEffect(() => {
+    return () => {
+      rendererRef.current?.dispose()
+      rendererRef.current = null
+    }
+  }, [])
 
   // 应用滤镜变化
   useEffect(() => {
